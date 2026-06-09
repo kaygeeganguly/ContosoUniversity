@@ -1,0 +1,40 @@
+# Build artifacts
+**/bin/
+**/obj/
+**/out/
+
+# Visual Studio files
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docobj
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+README.md
+*.md
+!appsettings*.json
+
+# Local development uploads
+ContosoUniversity/Uploads/
+
+# Test results
+TestResults/
+
+# Azure / infra files
+infra/
+.azure/
+
+# Modernization plan
+.github/modernize/
+
+# Node modules (if any)
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
