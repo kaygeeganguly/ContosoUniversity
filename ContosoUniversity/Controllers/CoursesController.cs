@@ -1,41 +1,52 @@
 using System;
-using Microsoft.EntityFrameworkCore;
-using System.Linq;
-using System.Net;
-using System.Web.Mvc;
 using System.IO;
-using System.Web;
+using System.Linq;
+using System.Threading.Tasks;
 using ContosoUniversity.Data;
 using ContosoUniversity.Models;
+using ContosoUniversity.Services;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace ContosoUniversity.Controllers
 {
     public class CoursesController : BaseController
     {
+        private readonly BlobStorageService _blobStorageService;
+
+        public CoursesController(SchoolContext db, NotificationService notificationService, ILogger<CoursesController> logger, BlobStorageService blobStorageService)
+            : base(db, notificationService, logger)
+        {
+            _blobStorageService = blobStorageService;
+        }
+
         // GET: Courses
-        public ActionResult Index()
+        public IActionResult Index()
         {
             var courses = db.Courses.Include(c => c.Department);
             return View(courses.ToList());
         }
 
         // GET: Courses/Details/5
-        public ActionResult Details(int? id)
+        public IActionResult Details(int? id)
         {
             if (id == null)
             {
-                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+                return BadRequest();
             }
-            Course course = db.Courses.Include(c => c.Department).Where(c => c.CourseID == id).Single();
+            Course course = db.Courses.Include(c => c.Department).Where(c => c.CourseID == id).SingleOrDefault();
             if (course == null)
             {
-                return HttpNotFound();
+                return NotFound();
             }
             return View(course);
         }
 
         // GET: Courses/Create
-        public ActionResult Create()
+        public IActionResult Create()
         {
             ViewBag.DepartmentID = new SelectList(db.Departments, "DepartmentID", "Name");
             return View(new Course());
@@ -44,26 +55,25 @@ namespace ContosoUniversity.Controllers
         // POST: Courses/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create([Bind(Include = "CourseID,Title,Credits,DepartmentID,TeachingMaterialImagePath")] Course course, HttpPostedFileBase teachingMaterialImage)
+        public async Task<IActionResult> Create([Bind("CourseID,Title,Credits,DepartmentID,TeachingMaterialImagePath")] Course course, IFormFile teachingMaterialImage)
         {
             if (ModelState.IsValid)
             {
-                // Handle file upload if an image is provided
-                if (teachingMaterialImage != null && teachingMaterialImage.ContentLength > 0)
+                string uploadedBlobUrl = null;
+
+                if (teachingMaterialImage != null && teachingMaterialImage.Length > 0)
                 {
-                    // Validate file type
                     var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp" };
                     var fileExtension = Path.GetExtension(teachingMaterialImage.FileName).ToLower();
-                    
-                    if (!allowedExtensions.Contains(fileExtension))
+
+                    if (!Array.Exists(allowedExtensions, e => e == fileExtension))
                     {
                         ModelState.AddModelError("teachingMaterialImage", "Please upload a valid image file (jpg, jpeg, png, gif, bmp).");
                         ViewBag.DepartmentID = new SelectList(db.Departments, "DepartmentID", "Name", course.DepartmentID);
                         return View(course);
                     }
 
-                    // Validate file size (max 5MB)
-                    if (teachingMaterialImage.ContentLength > 5 * 1024 * 1024)
+                    if (teachingMaterialImage.Length > 5 * 1024 * 1024)
                     {
                         ModelState.AddModelError("teachingMaterialImage", "File size must be less than 5MB.");
                         ViewBag.DepartmentID = new SelectList(db.Departments, "DepartmentID", "Name", course.DepartmentID);
@@ -72,20 +82,12 @@ namespace ContosoUniversity.Controllers
 
                     try
                     {
-                        // Create uploads directory if it doesn't exist
-                        var uploadsPath = Server.MapPath("~/Uploads/TeachingMaterials/");
-                        if (!Directory.Exists(uploadsPath))
-                        {
-                            Directory.CreateDirectory(uploadsPath);
-                        }
-
-                        // Generate unique filename
                         var fileName = $"course_{course.CourseID}_{Guid.NewGuid()}{fileExtension}";
-                        var filePath = Path.Combine(uploadsPath, fileName);
+                        var contentType = GetContentType(fileExtension);
 
-                        // Save file
-                        teachingMaterialImage.SaveAs(filePath);
-                        course.TeachingMaterialImagePath = $"~/Uploads/TeachingMaterials/{fileName}";
+                        using var stream = teachingMaterialImage.OpenReadStream();
+                        uploadedBlobUrl = await _blobStorageService.UploadBlobAsync(stream, fileName, contentType);
+                        course.TeachingMaterialImagePath = uploadedBlobUrl;
                     }
                     catch (Exception ex)
                     {
@@ -95,12 +97,32 @@ namespace ContosoUniversity.Controllers
                     }
                 }
 
-                db.Courses.Add(course);
-                db.SaveChanges();
-                
-                // Send notification for course creation
+                try
+                {
+                    db.Courses.Add(course);
+                    await db.SaveChangesAsync();
+                }
+                catch (Exception dbEx)
+                {
+                    // MIGRATION NOTE: If the database save fails after a blob was uploaded, the blob
+                    // will be orphaned in Azure Blob Storage. Clean up the orphaned blob to avoid
+                    // storage waste.
+                    if (uploadedBlobUrl != null)
+                    {
+                        try { await _blobStorageService.DeleteBlobAsync(uploadedBlobUrl); }
+                        catch (Exception cleanupEx)
+                        {
+                            _logger.LogWarning(cleanupEx, "Failed to clean up orphaned blob {BlobUrl} after database save failure.", uploadedBlobUrl);
+                        }
+                    }
+                    _logger.LogError(dbEx, "Failed to save course to database.");
+                    ModelState.AddModelError("", "An error occurred while saving. Please try again.");
+                    ViewBag.DepartmentID = new SelectList(db.Departments, "DepartmentID", "Name", course.DepartmentID);
+                    return View(course);
+                }
+
                 SendEntityNotification("Course", course.CourseID.ToString(), course.Title, EntityOperation.CREATE);
-                
+
                 return RedirectToAction("Index");
             }
 
@@ -109,16 +131,16 @@ namespace ContosoUniversity.Controllers
         }
 
         // GET: Courses/Edit/5
-        public ActionResult Edit(int? id)
+        public IActionResult Edit(int? id)
         {
             if (id == null)
             {
-                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+                return BadRequest();
             }
             Course course = db.Courses.Find(id);
             if (course == null)
             {
-                return HttpNotFound();
+                return NotFound();
             }
             ViewBag.DepartmentID = new SelectList(db.Departments, "DepartmentID", "Name", course.DepartmentID);
             return View(course);
@@ -127,26 +149,26 @@ namespace ContosoUniversity.Controllers
         // POST: Courses/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit([Bind(Include = "CourseID,Title,Credits,DepartmentID,TeachingMaterialImagePath")] Course course, HttpPostedFileBase teachingMaterialImage)
+        public async Task<IActionResult> Edit([Bind("CourseID,Title,Credits,DepartmentID,TeachingMaterialImagePath")] Course course, IFormFile teachingMaterialImage)
         {
             if (ModelState.IsValid)
             {
-                // Handle file upload if a new image is provided
-                if (teachingMaterialImage != null && teachingMaterialImage.ContentLength > 0)
+                string newBlobUrl = null;
+                string oldBlobUrl = course.TeachingMaterialImagePath;
+
+                if (teachingMaterialImage != null && teachingMaterialImage.Length > 0)
                 {
-                    // Validate file type
                     var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp" };
                     var fileExtension = Path.GetExtension(teachingMaterialImage.FileName).ToLower();
-                    
-                    if (!allowedExtensions.Contains(fileExtension))
+
+                    if (!Array.Exists(allowedExtensions, e => e == fileExtension))
                     {
                         ModelState.AddModelError("teachingMaterialImage", "Please upload a valid image file (jpg, jpeg, png, gif, bmp).");
                         ViewBag.DepartmentID = new SelectList(db.Departments, "DepartmentID", "Name", course.DepartmentID);
                         return View(course);
                     }
 
-                    // Validate file size (max 5MB)
-                    if (teachingMaterialImage.ContentLength > 5 * 1024 * 1024)
+                    if (teachingMaterialImage.Length > 5 * 1024 * 1024)
                     {
                         ModelState.AddModelError("teachingMaterialImage", "File size must be less than 5MB.");
                         ViewBag.DepartmentID = new SelectList(db.Departments, "DepartmentID", "Name", course.DepartmentID);
@@ -155,30 +177,12 @@ namespace ContosoUniversity.Controllers
 
                     try
                     {
-                        // Create uploads directory if it doesn't exist
-                        var uploadsPath = Server.MapPath("~/Uploads/TeachingMaterials/");
-                        if (!Directory.Exists(uploadsPath))
-                        {
-                            Directory.CreateDirectory(uploadsPath);
-                        }
-
-                        // Generate unique filename
                         var fileName = $"course_{course.CourseID}_{Guid.NewGuid()}{fileExtension}";
-                        var filePath = Path.Combine(uploadsPath, fileName);
+                        var contentType = GetContentType(fileExtension);
 
-                        // Delete old file if exists
-                        if (!string.IsNullOrEmpty(course.TeachingMaterialImagePath))
-                        {
-                            var oldFilePath = Server.MapPath(course.TeachingMaterialImagePath);
-                            if (System.IO.File.Exists(oldFilePath))
-                            {
-                                System.IO.File.Delete(oldFilePath);
-                            }
-                        }
-
-                        // Save new file
-                        teachingMaterialImage.SaveAs(filePath);
-                        course.TeachingMaterialImagePath = $"~/Uploads/TeachingMaterials/{fileName}";
+                        using var stream = teachingMaterialImage.OpenReadStream();
+                        newBlobUrl = await _blobStorageService.UploadBlobAsync(stream, fileName, contentType);
+                        course.TeachingMaterialImagePath = newBlobUrl;
                     }
                     catch (Exception ex)
                     {
@@ -188,12 +192,41 @@ namespace ContosoUniversity.Controllers
                     }
                 }
 
-                db.Entry(course).State = EntityState.Modified;
-                db.SaveChanges();
-                
-                // Send notification for course update
+                try
+                {
+                    db.Entry(course).State = EntityState.Modified;
+                    await db.SaveChangesAsync();
+                }
+                catch (Exception dbEx)
+                {
+                    // MIGRATION NOTE: If the database save fails after a new blob was uploaded,
+                    // clean up the orphaned new blob to keep storage consistent.
+                    if (newBlobUrl != null)
+                    {
+                        try { await _blobStorageService.DeleteBlobAsync(newBlobUrl); }
+                        catch (Exception cleanupEx)
+                        {
+                            _logger.LogWarning(cleanupEx, "Failed to clean up orphaned blob {BlobUrl} after database save failure.", newBlobUrl);
+                        }
+                    }
+                    _logger.LogError(dbEx, "Failed to update course in database.");
+                    ModelState.AddModelError("", "An error occurred while saving. Please try again.");
+                    ViewBag.DepartmentID = new SelectList(db.Departments, "DepartmentID", "Name", course.DepartmentID);
+                    return View(course);
+                }
+
+                // Delete the old blob after the database is successfully updated
+                if (newBlobUrl != null && !string.IsNullOrEmpty(oldBlobUrl))
+                {
+                    try { await _blobStorageService.DeleteBlobAsync(oldBlobUrl); }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to delete old teaching material blob {BlobUrl} after course update.", oldBlobUrl);
+                    }
+                }
+
                 SendEntityNotification("Course", course.CourseID.ToString(), course.Title, EntityOperation.UPDATE);
-                
+
                 return RedirectToAction("Index");
             }
             ViewBag.DepartmentID = new SelectList(db.Departments, "DepartmentID", "Name", course.DepartmentID);
@@ -201,16 +234,16 @@ namespace ContosoUniversity.Controllers
         }
 
         // GET: Courses/Delete/5
-        public ActionResult Delete(int? id)
+        public IActionResult Delete(int? id)
         {
             if (id == null)
             {
-                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+                return BadRequest();
             }
-            Course course = db.Courses.Include(c => c.Department).Where(c => c.CourseID == id).Single();
+            Course course = db.Courses.Include(c => c.Department).Where(c => c.CourseID == id).SingleOrDefault();
             if (course == null)
             {
-                return HttpNotFound();
+                return NotFound();
             }
             return View(course);
         }
@@ -218,46 +251,49 @@ namespace ContosoUniversity.Controllers
         // POST: Courses/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public ActionResult DeleteConfirmed(int id)
+        public async Task<IActionResult> DeleteConfirmed(int id)
         {
             Course course = db.Courses.Find(id);
             var courseTitle = course.Title;
-            
-            // Delete associated image file if it exists
-            if (!string.IsNullOrEmpty(course.TeachingMaterialImagePath))
+            var blobUrl = course.TeachingMaterialImagePath;
+
+            // Remove the course record from the database first to ensure data consistency.
+            // The blob cleanup follows; if blob deletion fails, the record is already removed
+            // and the orphaned blob can be cleaned up separately.
+            db.Courses.Remove(course);
+            await db.SaveChangesAsync();
+
+            SendEntityNotification("Course", id.ToString(), courseTitle, EntityOperation.DELETE);
+
+            // Delete associated teaching material blob from Azure Blob Storage after DB removal
+            if (!string.IsNullOrEmpty(blobUrl))
             {
-                var filePath = Server.MapPath(course.TeachingMaterialImagePath);
-                if (System.IO.File.Exists(filePath))
+                try
                 {
-                    try
-                    {
-                        System.IO.File.Delete(filePath);
-                    }
-                    catch (Exception ex)
-                    {
-                        // Log the error but don't prevent deletion of the course
-                        // In a production application, you would log this error properly
-                        System.Diagnostics.Debug.WriteLine($"Error deleting file: {ex.Message}");
-                    }
+                    await _blobStorageService.DeleteBlobAsync(blobUrl);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to delete teaching material blob {BlobUrl} for deleted course {CourseId}", blobUrl, id);
                 }
             }
-            
-            db.Courses.Remove(course);
-            db.SaveChanges();
-            
-            // Send notification for course deletion
-            SendEntityNotification("Course", id.ToString(), courseTitle, EntityOperation.DELETE);
-            
+
             return RedirectToAction("Index");
         }
 
-        protected override void Dispose(bool disposing)
+        /// <summary>
+        /// Maps a file extension to the corresponding MIME content type.
+        /// </summary>
+        private static string GetContentType(string fileExtension)
         {
-            if (disposing)
+            return fileExtension.ToLower() switch
             {
-                // Base class will dispose db and notificationService
-            }
-            base.Dispose(disposing);
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".gif" => "image/gif",
+                ".bmp" => "image/bmp",
+                _ => "application/octet-stream"
+            };
         }
     }
 }

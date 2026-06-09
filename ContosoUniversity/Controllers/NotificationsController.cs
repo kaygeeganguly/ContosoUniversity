@@ -1,48 +1,48 @@
 using System;
 using System.Collections.Generic;
-using System.Web.Mvc;
-using ContosoUniversity.Services;
+using ContosoUniversity.Data;
 using ContosoUniversity.Models;
+using ContosoUniversity.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace ContosoUniversity.Controllers
 {
     public class NotificationsController : BaseController
     {
-        // GET: api/notifications - Get pending notifications for admin
+        public NotificationsController(SchoolContext db, NotificationService notificationService, ILogger<NotificationsController> logger)
+            : base(db, notificationService, logger)
+        {
+        }
+
+        // GET: api/notifications - Get pending notifications from Azure Service Bus
         [HttpGet]
-        public JsonResult GetNotifications()
+        public IActionResult GetNotifications()
         {
             var notifications = new List<Notification>();
-            
+
             try
             {
-                // Read all available notifications from the queue
-                Notification notification;
-                while ((notification = notificationService.ReceiveNotification()) != null)
-                {
-                    notifications.Add(notification);
-                    
-                    // Limit to prevent overwhelming the UI
-                    if (notifications.Count >= 10)
-                        break;
-                }
+                // Peek up to 10 pending notifications from Azure Service Bus queue
+                notifications = notificationService.GetPendingNotifications(10);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error retrieving notifications: {ex.Message}");
-                return Json(new { success = false, message = "Error retrieving notifications" }, JsonRequestBehavior.AllowGet);
+                _logger.LogError(ex, "Error retrieving notifications");
+                return Json(new { success = false, message = "Error retrieving notifications" });
             }
 
-            return Json(new { 
-                success = true, 
+            return Json(new
+            {
+                success = true,
                 notifications = notifications,
-                count = notifications.Count 
-            }, JsonRequestBehavior.AllowGet);
+                count = notifications.Count
+            });
         }
 
         // POST: api/notifications/mark-read
         [HttpPost]
-        public JsonResult MarkAsRead(int id)
+        public IActionResult MarkAsRead(int id)
         {
             try
             {
@@ -51,13 +51,13 @@ namespace ContosoUniversity.Controllers
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error marking notification as read: {ex.Message}");
+                _logger.LogError(ex, "Error marking notification {NotificationId} as read", id);
                 return Json(new { success = false, message = "Error updating notification" });
             }
         }
 
-        // GET: Notifications/Index - Admin notification dashboard
-        public ActionResult Index()
+        // GET: Notifications/Index - Notification dashboard
+        public IActionResult Index()
         {
             return View();
         }
