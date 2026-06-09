@@ -1,44 +1,53 @@
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
-using System.Web.Mvc;
 using ContosoUniversity.Data;
+using ContosoUniversity.Models;
 using ContosoUniversity.Models.SchoolViewModels;
+using ContosoUniversity.Services;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ContosoUniversity.Controllers
 {
     public class HomeController : BaseController
     {
-        public ActionResult Index()
+        public HomeController(SchoolContext context, NotificationService notificationService)
+            : base(context, notificationService)
+        {
+        }
+
+        public IActionResult Index()
         {
             return View();
         }
 
-        public ActionResult About()
+        public IActionResult About()
         {
-            IQueryable<EnrollmentDateGroup> data = 
+            var data =
                 from student in db.Students
-                group student by student.EnrollmentDate into dateGroup
-                select new EnrollmentDateGroup()
+                group student by student.EnrollmentDate
+                into dateGroup
+                select new EnrollmentDateGroup
                 {
                     EnrollmentDate = dateGroup.Key,
                     StudentCount = dateGroup.Count()
                 };
+
             return View(data.ToList());
         }
 
-        public ActionResult Contact()
+        public IActionResult Contact()
         {
             ViewBag.Message = "Your contact page.";
-
             return View();
         }
 
-        public ActionResult Error()
+        public IActionResult Error()
         {
-            return View();
+            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
 
-        public ActionResult Unauthorized()
+        [ActionName("Unauthorized")]
+        public IActionResult UnauthorizedPage()
         {
             ViewBag.Message = "You don't have permission to access this resource.";
             return View();

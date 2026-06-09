@@ -14,14 +14,20 @@
         "generateNewUnitTests": "false",
         "passUnitTests": "true"
       },
-      "status": "pending"
+      "status": "success",
+      "taskSummary": "Upgraded ContosoUniversity to SDK-style ASP.NET Core on net10.0; replaced legacy startup/config with Program.cs and appsettings.json; migrated MVC controllers/views; updated EF Core packages; replaced MSMQ notification implementation with ASP.NET Core-compatible in-memory queue; build and tests passed in delegated validation.",
+      "successCriteriaStatus": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
     }
   ],
   "metadata": {
     "planName": "upgrade-to-lts",
     "projectName": "ContosoUniversity",
     "language": "dotnet",
-    "createdAt": "2026-06-09T12:26:13.000Z",
+    "createdAt": "2026-06-09T12:26:13Z",
     "version": "1.0"
   }
 }
