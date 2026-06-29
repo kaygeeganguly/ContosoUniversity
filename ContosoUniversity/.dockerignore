@@ -1,0 +1,34 @@
+# Git
+.git
+.gitignore
+
+# Build output
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Uploads (local dev only — production uses Azure Blob Storage)
+Uploads/
+
+# Test results
+TestResults/
+
+# Node modules (if any)
+node_modules/
+
+# Docker files (not needed inside image)
+Dockerfile
+.dockerignore
+
+# IDE
+.vscode/
+.idea/
+
+# Secrets / dev config
+appsettings.Development.json
+*.pfx
+*.key

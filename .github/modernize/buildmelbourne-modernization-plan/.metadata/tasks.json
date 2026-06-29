@@ -109,7 +109,7 @@
       "type": "transform",
       "id": "005-transform-console-logging",
       "status": "success",
-      "summary": "Configured structured console logging using ILogger throughout the application. Registered console logging provider with JSON formatter in Program.cs for Azure Container Apps log collection. Replaced all System.Diagnostics.Debug.WriteLine and Trace.TraceError calls in NotificationService, BaseController, CoursesController, NotificationsController, and StudentsController with structured _logger.LogError calls using named message template parameters. Updated all 6 derived controllers (CoursesController, NotificationsController, StudentsController, DepartmentsController, HomeController, InstructorsController) to inject ILogger<T> and pass to BaseController. Build succeeds with 0 errors, 0 warnings.",
+      "summary": "Configured structured console logging using ILogger throughout the application. Registered console logging provider with JSON formatter in Program.cs for Azure Container Apps log collection. Replaced all System.Diagnostics.Debug.WriteLine and Trace.TraceError calls in NotificationService, BaseController, CoursesController, NotificationsController, and StudentsController with structured _logger.LogError calls using named message template parameters. Updated all 6 derived controllers (CoursesController, NotificationsController, StudentsController, DepartmentsController, HomeController, InstructorsController) to inject ILogger\u003CT\u003E and pass to BaseController. Build succeeds with 0 errors, 0 warnings.",
       "successCriteriaStatus": {
         "passBuild": "true",
         "generateNewUnitTests": "false",
@@ -136,6 +136,13 @@
     {
       "type": "security",
       "id": "006-security-cve-remediation",
+      "status": "success",
+      "summary": "Scanned all 6 NuGet packages (Azure.Identity, Azure.Messaging.ServiceBus, Azure.Storage.Blobs, Microsoft.EntityFrameworkCore.SqlServer, Microsoft.EntityFrameworkCore.Tools, Newtonsoft.Json). No CVEs found. All dependencies are at secure versions. No fixes required. Build succeeds.",
+      "successCriteriaStatus": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      },
       "description": "Scan and remediate known CVEs in project dependencies",
       "reason": "The project uses older package versions (EF Core 3.1.32, Microsoft.Identity.Client 4.21.1, Microsoft.Data.SqlClient 2.1.4, Newtonsoft.Json 13.0.3) that may contain known security vulnerabilities. Security remediation must be completed before deployment.",
       "requirements": "Upgrade vulnerable dependencies to the minimum patched version. If a CVE fix requires a major version upgrade, document the affected dependency, the current version, the upgraded major version, and the breaking change risk. Verify that the project builds and all tests pass after remediation. Runtime environment and build tool are established by the upgrade task (001-upgrade-dotnet).",
@@ -161,6 +168,13 @@
     {
       "type": "infrastructure",
       "id": "007-infrastructure-bicep",
+      "status": "success",
+      "summary": "Generated 15 Bicep IaC files and provisioned all Azure resources in centralus (rg-contosouniversity): User-Assigned Managed Identity, Azure Container Registry, Log Analytics, Container Apps Environment, Container App, Azure SQL Database (serverless, AAD-only auth), Service Bus Namespace \u002B Queue (ContosoUniversityNotifications), Storage Account \u002B Blob Container (teaching-materials). All role assignments configured. Container App running at azcazufdbcxl752tq.ashymushroom-e7c9520b.centralus.azurecontainerapps.io.",
+      "successCriteriaStatus": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      },
       "description": "Generate and provision Bicep IaC for all Azure resources required by ContosoUniversity",
       "reason": "New Azure infrastructure must be provisioned to host the containerized application and its dependent Azure services before deployment.",
       "requirements": "Generate Bicep IaC files to provision the following Azure resources: Azure Container Registry (Basic SKU) for Docker image hosting, Azure Container Apps Environment (Consumption) as the hosting platform, Azure Container App (Consumption) for the web application, Azure SQL Database (General Purpose) for school data, Azure Service Bus Namespace (Standard) with a queue named ContosoUniversityNotifications, Azure Storage Account (Standard LRS) with a blob container named teaching-materials, User-Assigned Managed Identity with role assignments (AcrPull on ACR, Azure Service Bus Data Owner on Service Bus, Storage Blob Data Contributor on Storage Account, db_owner-equivalent on Azure SQL Database). All resources should be deployed to the same resource group and region.",
@@ -176,6 +190,13 @@
     {
       "type": "deployment",
       "id": "008-deploy-container-apps",
+      "status": "success",
+      "summary": "Containerized and deployed ContosoUniversity ASP.NET Core .NET 10 to Azure Container Apps. Created multi-stage Dockerfile (dotnet/sdk:10.0 build, dotnet/aspnet:10.0 runtime, non-root user, port 8080). Built and pushed image to ACR (azacrzufdbcxl752tq.azurecr.io/contosouniversity:latest, sha256:ffefc34e...). Deployed revision azcazufdbcxl752tq--0000003 with all Azure service env vars (SQL, Service Bus, Blob Storage, Managed Identity). App live at https://azcazufdbcxl752tq.ashymushroom-e7c9520b.centralus.azurecontainerapps.io. Logs confirm: Application started, listening on port 8080, EF Core SQL queries executing.",
+      "successCriteriaStatus": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      },
       "description": "Containerize and deploy the ContosoUniversity application to Azure Container Apps",
       "reason": "The user explicitly requested deployment to Azure Container Apps. The application must be containerized and deployed to the provisioned Azure Container Apps environment.",
       "requirements": "Build a Docker image for the ContosoUniversity ASP.NET Core .NET 10 application. Push the image to Azure Container Registry. Deploy to Azure Container Apps using the provisioned infrastructure from task 007. Configure all required environment variables for Azure service connections (Azure SQL Database server, Azure Service Bus namespace, Azure Storage Account, Managed Identity client ID). Set appropriate resource limits and scaling rules for the container app.",
