@@ -6,52 +6,51 @@
 
 <h2>Create</h2>
 
-@using (Html.BeginForm("Create", "Courses", FormMethod.Post, new { enctype = "multipart/form-data" })) 
-{
-    @Html.AntiForgeryToken()
-    
+<form asp-action="Create" method="post" enctype="multipart/form-data">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
     <div class="form-horizontal">
         <h4>Course</h4>
         <hr />
-        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
         <div class="form-group">
-            @Html.LabelFor(model => model.CourseID, htmlAttributes: new { @class = "control-label col-md-2" })
+            <label asp-for="CourseID" class="control-label col-md-2"></label>
             <div class="col-md-10">
-                @Html.EditorFor(model => model.CourseID, new { htmlAttributes = new { @class = "form-control" } })
-                @Html.ValidationMessageFor(model => model.CourseID, "", new { @class = "text-danger" })
+                <input asp-for="CourseID" class="form-control" />
+                <span asp-validation-for="CourseID" class="text-danger"></span>
             </div>
         </div>
 
         <div class="form-group">
-            @Html.LabelFor(model => model.Title, htmlAttributes: new { @class = "control-label col-md-2" })
+            <label asp-for="Title" class="control-label col-md-2"></label>
             <div class="col-md-10">
-                @Html.EditorFor(model => model.Title, new { htmlAttributes = new { @class = "form-control" } })
-                @Html.ValidationMessageFor(model => model.Title, "", new { @class = "text-danger" })
+                <input asp-for="Title" class="form-control" />
+                <span asp-validation-for="Title" class="text-danger"></span>
             </div>
         </div>
 
         <div class="form-group">
-            @Html.LabelFor(model => model.Credits, htmlAttributes: new { @class = "control-label col-md-2" })
+            <label asp-for="Credits" class="control-label col-md-2"></label>
             <div class="col-md-10">
-                @Html.EditorFor(model => model.Credits, new { htmlAttributes = new { @class = "form-control" } })
-                @Html.ValidationMessageFor(model => model.Credits, "", new { @class = "text-danger" })
+                <input asp-for="Credits" class="form-control" />
+                <span asp-validation-for="Credits" class="text-danger"></span>
             </div>
         </div>
 
         <div class="form-group">
-            @Html.LabelFor(model => model.DepartmentID, "Department", htmlAttributes: new { @class = "control-label col-md-2" })
+            <label asp-for="DepartmentID" class="control-label col-md-2">Department</label>
             <div class="col-md-10">
-                @Html.DropDownList("DepartmentID", null, "-- Select Department --", htmlAttributes: new { @class = "form-control" })
-                @Html.ValidationMessageFor(model => model.DepartmentID, "", new { @class = "text-danger" })
+                <select asp-for="DepartmentID" asp-items="ViewBag.DepartmentID" class="form-control">
+                    <option value="">-- Select Department --</option>
+                </select>
+                <span asp-validation-for="DepartmentID" class="text-danger"></span>
             </div>
         </div>
 
         <div class="form-group">
-            @Html.LabelFor(model => model.TeachingMaterialImagePath, "Teaching Material Image", htmlAttributes: new { @class = "control-label col-md-2" })
+            <label class="control-label col-md-2">Teaching Material Image</label>
             <div class="col-md-10">
                 <input type="file" name="teachingMaterialImage" accept="image/*" class="form-control" />
                 <small class="text-muted">Supported formats: JPG, JPEG, PNG, GIF, BMP. Max size: 5MB.</small>
-                @Html.ValidationMessage("teachingMaterialImage", "", new { @class = "text-danger" })
+                <span class="text-danger" data-valmsg-for="teachingMaterialImage"></span>
             </div>
         </div>
 
@@ -61,12 +60,12 @@
             </div>
         </div>
     </div>
-}
+</form>
 
 <div>
-    @Html.ActionLink("Back to List", "Index")
+    <a asp-action="Index">Back to List</a>
 </div>
 
 @section Scripts {
-    @Scripts.Render("~/bundles/jqueryval")
+    <partial name="_ValidationScriptsPartial" />
 }

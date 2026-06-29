@@ -14,7 +14,13 @@
         "generateNewUnitTests": "false",
         "passUnitTests": "true"
       },
-      "status": "pending"
+      "status": "success",
+      "summary": "Successfully upgraded ContosoUniversity from .NET Framework 4.8 (ASP.NET MVC 5) to .NET 10.0 (ASP.NET Core MVC). Converted project to SDK-style format, replaced System.Web-based MVC with Microsoft.AspNetCore.Mvc, migrated Global.asax to Program.cs, replaced Web.config with appsettings.json, updated NuGet packages, replaced System.Messaging with ConcurrentQueue, migrated all views to ASP.NET Core tag helpers, and updated EF Core to 9.x.",
+      "successCriteriaStatus": {
+        "passBuild": true,
+        "generateNewUnitTests": false,
+        "passUnitTests": true
+      }
     }
   ],
   "metadata": {

@@ -10,27 +10,13 @@
     <h4>Student</h4>
     <hr />
     <dl class="dl-horizontal">
-        <dt>
-            @Html.DisplayNameFor(model => model.LastName)
-        </dt>
-        <dd>
-            @Html.DisplayFor(model => model.LastName)
-        </dd>
-        <dt>
-            @Html.DisplayNameFor(model => model.FirstMidName)
-        </dt>
-        <dd>
-            @Html.DisplayFor(model => model.FirstMidName)
-        </dd>
-        <dt>
-            @Html.DisplayNameFor(model => model.EnrollmentDate)
-        </dt>
-        <dd>
-            @Html.DisplayFor(model => model.EnrollmentDate)
-        </dd>
-        <dt>
-            @Html.DisplayNameFor(model => model.Enrollments)
-        </dt>
+        <dt>Last Name</dt>
+        <dd>@Model.LastName</dd>
+        <dt>First Name</dt>
+        <dd>@Model.FirstMidName</dd>
+        <dt>Enrollment Date</dt>
+        <dd>@Model.EnrollmentDate.ToString("yyyy-MM-dd")</dd>
+        <dt>Enrollments</dt>
         <dd>
             @if (Model.Enrollments != null && Model.Enrollments.Any())
             {
@@ -42,12 +28,8 @@
                     @foreach (var item in Model.Enrollments)
                     {
                         <tr>
-                            <td>
-                                @Html.DisplayFor(modelItem => item.Course.Title)
-                            </td>
-                            <td>
-                                @Html.DisplayFor(modelItem => item.Grade)
-                            </td>
+                            <td>@item.Course?.Title</td>
+                            <td>@item.Grade</td>
                         </tr>
                     }
                 </table>
@@ -60,6 +42,6 @@
     </dl>
 </div>
 <div>
-    @Html.ActionLink("Edit", "Edit", new { id = Model.ID }) |
-    @Html.ActionLink("Back to List", "Index")
+    <a asp-action="Edit" asp-route-id="@Model.ID">Edit</a> |
+    <a asp-action="Index">Back to List</a>
 </div>

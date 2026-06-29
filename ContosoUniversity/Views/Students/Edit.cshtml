@@ -6,37 +6,34 @@
 
 <h2>Edit</h2>
 
-@using (Html.BeginForm())
-{
-    @Html.AntiForgeryToken()
-    
+<form asp-action="Edit">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
     <div class="form-horizontal">
         <h4>Student</h4>
         <hr />
-        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
-        @Html.HiddenFor(model => model.ID)
+        <input asp-for="ID" type="hidden" />
 
         <div class="form-group">
-            @Html.LabelFor(model => model.LastName, htmlAttributes: new { @class = "control-label col-md-2" })
+            <label asp-for="LastName" class="control-label col-md-2"></label>
             <div class="col-md-10">
-                @Html.EditorFor(model => model.LastName, new { htmlAttributes = new { @class = "form-control" } })
-                @Html.ValidationMessageFor(model => model.LastName, "", new { @class = "text-danger" })
+                <input asp-for="LastName" class="form-control" />
+                <span asp-validation-for="LastName" class="text-danger"></span>
             </div>
         </div>
 
         <div class="form-group">
-            @Html.LabelFor(model => model.FirstMidName, htmlAttributes: new { @class = "control-label col-md-2" })
+            <label asp-for="FirstMidName" class="control-label col-md-2"></label>
             <div class="col-md-10">
-                @Html.EditorFor(model => model.FirstMidName, new { htmlAttributes = new { @class = "form-control" } })
-                @Html.ValidationMessageFor(model => model.FirstMidName, "", new { @class = "text-danger" })
+                <input asp-for="FirstMidName" class="form-control" />
+                <span asp-validation-for="FirstMidName" class="text-danger"></span>
             </div>
         </div>
 
         <div class="form-group">
-            @Html.LabelFor(model => model.EnrollmentDate, htmlAttributes: new { @class = "control-label col-md-2" })
+            <label asp-for="EnrollmentDate" class="control-label col-md-2"></label>
             <div class="col-md-10">
-                @Html.EditorFor(model => model.EnrollmentDate, new { htmlAttributes = new { @class = "form-control" } })
-                @Html.ValidationMessageFor(model => model.EnrollmentDate, "", new { @class = "text-danger" })
+                <input asp-for="EnrollmentDate" class="form-control" type="date" />
+                <span asp-validation-for="EnrollmentDate" class="text-danger"></span>
             </div>
         </div>
 
@@ -46,12 +43,12 @@
             </div>
         </div>
     </div>
-}
+</form>
 
 <div>
-    @Html.ActionLink("Back to List", "Index")
+    <a asp-action="Index">Back to List</a>
 </div>
 
 @section Scripts {
-    @Scripts.Render("~/bundles/jqueryval")
+    <partial name="_ValidationScriptsPartial" />
 }
