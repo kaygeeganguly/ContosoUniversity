@@ -40,7 +40,7 @@
         <dd>
             @if (!string.IsNullOrEmpty(Model.TeachingMaterialImagePath))
             {
-                <img src="@Url.Content(Model.TeachingMaterialImagePath)" alt="Teaching Material" style="max-width: 300px; max-height: 300px; border: 1px solid #ddd; padding: 5px;" />
+                <img src="@Model.TeachingMaterialImagePath" alt="Teaching Material" style="max-width: 300px; max-height: 300px; border: 1px solid #ddd; padding: 5px;" />
             }
             else
             {

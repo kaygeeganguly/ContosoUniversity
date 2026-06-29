@@ -24,7 +24,13 @@
     {
       "type": "transform",
       "id": "002-transform-msmq-to-servicebus",
-      "status": "started",
+      "status": "success",
+      "summary": "Migrated NotificationService from System.Threading.Channels (interim in-memory) to Azure Service Bus with DefaultAzureCredential (Managed Identity). Added Azure.Messaging.ServiceBus 7.19.0 and Azure.Identity 1.14.2. Queue name ContosoUniversityNotifications preserved. Build succeeds with 0 errors.",
+      "successCriteriaStatus": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      },
       "description": "Migrate Windows MSMQ notification queue to Azure Service Bus",
       "reason": "System.Messaging (MSMQ) is a Windows-only API and is incompatible with Linux containers required by Azure Container Apps. Addresses issue: Windows MSMQ dependency in NotificationService.cs.",
       "requirements": "Migrate NotificationService from System.Messaging.MessageQueue to Azure Service Bus. Use Managed Identity (DefaultAzureCredential) for authentication instead of connection strings. Preserve all existing notification operations: send notification (SendNotification), receive notification (ReceiveNotification), and mark as read (MarkAsRead). Remove the System.Messaging and System.Messaging-based NuGet dependency. The Azure Service Bus queue name should match the existing queue name (ContosoUniversityNotifications).",
@@ -46,6 +52,7 @@
     {
       "type": "transform",
       "id": "003-transform-local-storage-to-blob",
+      "status": "started",
       "description": "Migrate local file system teaching material uploads to Azure Blob Storage",
       "reason": "Local filesystem storage is ephemeral in Azure Container Apps containers. Files uploaded to the local path ~/Uploads/TeachingMaterials/ will be lost on container restarts. Addresses issue: Local filesystem file upload in CoursesController.cs.",
       "requirements": "Migrate teaching material image upload and retrieval in CoursesController from local filesystem (~/Uploads/TeachingMaterials/) to Azure Blob Storage. Use Managed Identity (DefaultAzureCredential) for authentication. Preserve all existing file operations: upload on course create, replace file on course edit (including deletion of old file), delete file on course delete. Preserve existing validation (allowed image extensions: jpg, jpeg, png, gif, bmp; max file size 5MB). Update image URL references to use Azure Blob Storage URLs instead of local virtual paths.",
