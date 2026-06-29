@@ -11,37 +11,20 @@
     <h4>Course</h4>
     <hr />
     <dl class="dl-horizontal">
-        <dt>
-            @Html.DisplayNameFor(model => model.CourseID)
-        </dt>
-        <dd>
-            @Html.DisplayFor(model => model.CourseID)
-        </dd>
-        <dt>
-            @Html.DisplayNameFor(model => model.Title)
-        </dt>
-        <dd>
-            @Html.DisplayFor(model => model.Title)
-        </dd>
-        <dt>
-            @Html.DisplayNameFor(model => model.Credits)
-        </dt>
-        <dd>
-            @Html.DisplayFor(model => model.Credits)
-        </dd>
-        <dt>
-            @Html.DisplayNameFor(model => model.Department.Name)
-        </dt>
-        <dd>
-            @Html.DisplayFor(model => model.Department.Name)
-        </dd>
+        <dt>Course ID</dt>
+        <dd>@Model.CourseID</dd>
+        <dt>Title</dt>
+        <dd>@Model.Title</dd>
+        <dt>Credits</dt>
+        <dd>@Model.Credits</dd>
+        <dt>Department</dt>
+        <dd>@Model.Department?.Name</dd>
     </dl>
 
-    @using (Html.BeginForm()) {
-        @Html.AntiForgeryToken()
+    <form asp-action="Delete">
         <div class="form-actions no-color">
             <input type="submit" value="Delete" class="btn btn-default" /> |
-            @Html.ActionLink("Back to List", "Index")
+            <a asp-action="Index">Back to List</a>
         </div>
-    }
+    </form>
 </div>

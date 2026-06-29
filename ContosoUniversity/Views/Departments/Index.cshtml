@@ -7,24 +7,16 @@
 <h2>Departments</h2>
 
 <p>
-    @Html.ActionLink("Create New", "Create", null, new { @class = "btn btn-primary" })
+    <a class="btn btn-primary" asp-action="Create">Create New</a>
 </p>
 
 <table class="table">
     <thead>
         <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Name)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Budget)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.StartDate)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Administrator.FullName)
-            </th>
+            <th>Name</th>
+            <th>Budget</th>
+            <th>Start Date</th>
+            <th>Administrator</th>
             <th>Actions</th>
         </tr>
     </thead>
@@ -32,24 +24,16 @@
         @foreach (var item in Model)
         {
             <tr>
+                <td>@item.Name</td>
+                <td>@item.Budget</td>
+                <td>@item.StartDate.ToString("yyyy-MM-dd")</td>
+                <td>@item.Administrator?.FullName</td>
                 <td>
-                    @Html.DisplayFor(modelItem => item.Name)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Budget)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.StartDate)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Administrator.FullName)
-                </td>
-                <td>
-                    @Html.ActionLink("Details", "Details", new { id = item.DepartmentID }, new { @class = "btn btn-info btn-sm" })
-                    @Html.Raw(" | ")
-                    @Html.ActionLink("Edit", "Edit", new { id = item.DepartmentID }, new { @class = "btn btn-warning btn-sm" })
-                    @Html.Raw(" | ")
-                    @Html.ActionLink("Delete", "Delete", new { id = item.DepartmentID }, new { @class = "btn btn-danger btn-sm" })
+                    <a class="btn btn-info btn-sm" asp-action="Details" asp-route-id="@item.DepartmentID">Details</a>
+                    |
+                    <a class="btn btn-warning btn-sm" asp-action="Edit" asp-route-id="@item.DepartmentID">Edit</a>
+                    |
+                    <a class="btn btn-danger btn-sm" asp-action="Delete" asp-route-id="@item.DepartmentID">Delete</a>
                 </td>
             </tr>
         }
