@@ -7,8 +7,8 @@ namespace ContosoUniversity.Controllers
 {
     public class NotificationsController : BaseController
     {
-        public NotificationsController(SchoolContext context, NotificationService notificationSvc)
-            : base(context, notificationSvc)
+        public NotificationsController(SchoolContext context, NotificationService notificationSvc, ILogger<NotificationsController> logger)
+            : base(context, notificationSvc, logger)
         {
         }
 
@@ -31,7 +31,7 @@ namespace ContosoUniversity.Controllers
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error retrieving notifications: {ex.Message}");
+                _logger.LogError(ex, "Error retrieving notifications");
                 return Json(new { success = false, message = "Error retrieving notifications" });
             }
 
@@ -54,7 +54,7 @@ namespace ContosoUniversity.Controllers
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error marking notification as read: {ex.Message}");
+                _logger.LogError(ex, "Error marking notification {NotificationId} as read", id);
                 return Json(new { success = false, message = "Error updating notification" });
             }
         }

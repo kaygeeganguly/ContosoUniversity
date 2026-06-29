@@ -10,15 +10,17 @@ namespace ContosoUniversity.Services
         private const string QueueName = "ContosoUniversityNotifications";
         private readonly ServiceBusClient _client;
         private readonly ServiceBusSender _sender;
+        private readonly ILogger<NotificationService> _logger;
         private bool _disposed;
 
-        public NotificationService(IConfiguration configuration)
+        public NotificationService(IConfiguration configuration, ILogger<NotificationService> logger)
         {
             var fullyQualifiedNamespace = configuration["AzureServiceBus:FullyQualifiedNamespace"]
                 ?? throw new InvalidOperationException("AzureServiceBus:FullyQualifiedNamespace is not configured.");
             var credential = new DefaultAzureCredential();
             _client = new ServiceBusClient(fullyQualifiedNamespace, credential);
             _sender = _client.CreateSender(QueueName);
+            _logger = logger;
         }
 
         public void SendNotification(string entityType, string entityId, EntityOperation operation, string? userName = null)
@@ -49,13 +51,13 @@ namespace ContosoUniversity.Services
                 {
                     if (t.IsFaulted)
                     {
-                        System.Diagnostics.Debug.WriteLine($"Failed to send notification: {t.Exception?.GetBaseException().Message}");
+                        _logger.LogError(t.Exception?.GetBaseException(), "Failed to send notification asynchronously for {EntityType} {EntityId}", entityType, entityId);
                     }
                 }, TaskScheduler.Default);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to send notification: {ex.Message}");
+                _logger.LogError(ex, "Failed to send notification for {EntityType} {EntityId}", entityType, entityId);
             }
         }
 
@@ -75,7 +77,7 @@ namespace ContosoUniversity.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to receive notification: {ex.Message}");
+                _logger.LogError(ex, "Failed to receive notification");
                 return null;
             }
         }

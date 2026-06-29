@@ -6,6 +6,9 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure console logging for cloud/container environments (stdout/stderr for Azure Container Apps log collection)
+builder.Logging.AddConsole();
+
 // Add services to the container
 builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<SchoolContext>(options =>

@@ -9,11 +9,13 @@ namespace ContosoUniversity.Controllers
     {
         protected readonly SchoolContext db;
         protected readonly NotificationService notificationService;
+        protected readonly ILogger _logger;
 
-        protected BaseController(SchoolContext context, NotificationService notificationSvc)
+        protected BaseController(SchoolContext context, NotificationService notificationSvc, ILogger logger)
         {
             db = context;
             notificationService = notificationSvc;
+            _logger = logger;
         }
 
         protected void SendEntityNotification(string entityType, string entityId, EntityOperation operation)
@@ -31,7 +33,7 @@ namespace ContosoUniversity.Controllers
             catch (Exception ex)
             {
                 // Log the error but don't break the main operation
-                System.Diagnostics.Debug.WriteLine($"Failed to send notification: {ex.Message}");
+                _logger.LogError(ex, "Failed to send notification for {EntityType} {EntityId}", entityType, entityId);
             }
         }
 

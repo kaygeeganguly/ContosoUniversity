@@ -10,8 +10,8 @@ namespace ContosoUniversity.Controllers
     {
         private readonly IBlobStorageService _blobStorageService;
 
-        public CoursesController(SchoolContext context, NotificationService notificationSvc, IBlobStorageService blobStorageService)
-            : base(context, notificationSvc)
+        public CoursesController(SchoolContext context, NotificationService notificationSvc, IBlobStorageService blobStorageService, ILogger<CoursesController> logger)
+            : base(context, notificationSvc, logger)
         {
             _blobStorageService = blobStorageService;
         }
@@ -216,7 +216,7 @@ namespace ContosoUniversity.Controllers
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Error deleting blob: {ex.Message}");
+                    _logger.LogError(ex, "Error deleting blob for course {CourseId}", id);
                 }
             }
 

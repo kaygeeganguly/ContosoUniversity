@@ -8,8 +8,8 @@ namespace ContosoUniversity.Controllers
 {
     public class DepartmentsController : BaseController
     {
-        public DepartmentsController(SchoolContext context, NotificationService notificationSvc)
-            : base(context, notificationSvc)
+        public DepartmentsController(SchoolContext context, NotificationService notificationSvc, ILogger<DepartmentsController> logger)
+            : base(context, notificationSvc, logger)
         {
         }
 

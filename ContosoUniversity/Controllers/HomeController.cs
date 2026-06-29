@@ -7,8 +7,8 @@ namespace ContosoUniversity.Controllers
 {
     public class HomeController : BaseController
     {
-        public HomeController(SchoolContext context, NotificationService notificationSvc)
-            : base(context, notificationSvc)
+        public HomeController(SchoolContext context, NotificationService notificationSvc, ILogger<HomeController> logger)
+            : base(context, notificationSvc, logger)
         {
         }
 
