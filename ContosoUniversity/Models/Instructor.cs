@@ -15,7 +15,7 @@ namespace ContosoUniversity.Models
         [Range(typeof(DateTime), "1/1/1753", "12/31/9999", ErrorMessage = "Hire date must be between 1753 and 9999")]
         public DateTime HireDate { get; set; }
 
-        public virtual ICollection<CourseAssignment> CourseAssignments { get; set; }
-        public virtual OfficeAssignment OfficeAssignment { get; set; }
+        public virtual ICollection<CourseAssignment> CourseAssignments { get; set; } = new List<CourseAssignment>();
+        public virtual OfficeAssignment? OfficeAssignment { get; set; }
     }
 }

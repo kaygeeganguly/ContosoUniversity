@@ -11,7 +11,7 @@ namespace ContosoUniversity.Models
         public int CourseID { get; set; }
 
         [StringLength(50, MinimumLength = 3)]
-        public string Title { get; set; }
+        public string Title { get; set; } = null!;
 
         [Range(0, 5)]
         public int Credits { get; set; }
@@ -20,10 +20,10 @@ namespace ContosoUniversity.Models
 
         [Display(Name = "Teaching Material Image")]
         [StringLength(255)]
-        public string TeachingMaterialImagePath { get; set; }
+        public string? TeachingMaterialImagePath { get; set; }
 
-        public virtual Department Department { get; set; }
-        public virtual ICollection<Enrollment> Enrollments { get; set; }
-        public virtual ICollection<CourseAssignment> CourseAssignments { get; set; }
+        public virtual Department Department { get; set; } = null!;
+        public virtual ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
+        public virtual ICollection<CourseAssignment> CourseAssignments { get; set; } = new List<CourseAssignment>();
     }
 }

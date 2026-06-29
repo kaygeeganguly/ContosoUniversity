@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Tasks template for modernization plan. Generate this file alongside plan.md to track individual migration tasks.",
+  "tasks": [
+    {
+      "type": "upgrade",
+      "id": "001-upgrade-dotnet",
+      "status": "success",
+      "summary": "Upgraded ContosoUniversity from .NET Framework 4.8 to .NET 10. Converted to SDK-style project, migrated packages.config to PackageReference, replaced Web.config with appsettings.json, migrated Global.asax to Program.cs, updated all 7 controllers from System.Web.Mvc to Microsoft.AspNetCore.Mvc, upgraded EF Core from 3.1.32 to 10.0.9. Build succeeds with 0 errors, 0 warnings.",
+      "successCriteriaStatus": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      },
+      "description": "Upgrade the application from .NET Framework 4.8 to .NET 10",
+      "reason": ".NET Framework 4.8 is end-of-life for cross-platform container support and incompatible with Linux-based Azure Container Apps. The user explicitly requested an upgrade to .NET 10.",
+      "requirements": "Upgrade from .NET Framework 4.8 (ASP.NET MVC 5, non-SDK-style project) to .NET 10 targeting net10.0. Convert the legacy .csproj to SDK-style format. Migrate packages.config to PackageReference. Replace Web.config configuration (connection strings, appSettings) with appsettings.json and IConfiguration. Migrate Global.asax application startup to Program.cs and middleware pipeline. Replace System.Web-based APIs (HttpContext, HttpPostedFileBase, HttpStatusCodeResult) with ASP.NET Core equivalents. Update all controllers from System.Web.Mvc to Microsoft.AspNetCore.Mvc. Upgrade Entity Framework Core from 3.1.32 to the latest EF Core 10 compatible version.",
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "002-transform-msmq-to-servicebus",
+      "status": "started",
+      "description": "Migrate Windows MSMQ notification queue to Azure Service Bus",
+      "reason": "System.Messaging (MSMQ) is a Windows-only API and is incompatible with Linux containers required by Azure Container Apps. Addresses issue: Windows MSMQ dependency in NotificationService.cs.",
+      "requirements": "Migrate NotificationService from System.Messaging.MessageQueue to Azure Service Bus. Use Managed Identity (DefaultAzureCredential) for authentication instead of connection strings. Preserve all existing notification operations: send notification (SendNotification), receive notification (ReceiveNotification), and mark as read (MarkAsRead). Remove the System.Messaging and System.Messaging-based NuGet dependency. The Azure Service Bus queue name should match the existing queue name (ContosoUniversityNotifications).",
+      "dependencies": [
+        "001-upgrade-dotnet"
+      ],
+      "skills": [
+        {
+          "name": "migration-azure-servicebus",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "003-transform-local-storage-to-blob",
+      "description": "Migrate local file system teaching material uploads to Azure Blob Storage",
+      "reason": "Local filesystem storage is ephemeral in Azure Container Apps containers. Files uploaded to the local path ~/Uploads/TeachingMaterials/ will be lost on container restarts. Addresses issue: Local filesystem file upload in CoursesController.cs.",
+      "requirements": "Migrate teaching material image upload and retrieval in CoursesController from local filesystem (~/Uploads/TeachingMaterials/) to Azure Blob Storage. Use Managed Identity (DefaultAzureCredential) for authentication. Preserve all existing file operations: upload on course create, replace file on course edit (including deletion of old file), delete file on course delete. Preserve existing validation (allowed image extensions: jpg, jpeg, png, gif, bmp; max file size 5MB). Update image URL references to use Azure Blob Storage URLs instead of local virtual paths.",
+      "dependencies": [
+        "001-upgrade-dotnet"
+      ],
+      "skills": [
+        {
+          "name": "migration-azure-storage-blob",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "004-transform-sql-to-azure-sql",
+      "description": "Migrate SQL Server LocalDB connection string authentication to Azure SQL Database with Managed Identity",
+      "reason": "Local SQL Server (LocalDB) with Integrated Security is not available in Azure Container Apps. Cloud-native Managed Identity authentication should replace explicit connection strings for security and operational simplicity. Addresses issue: Local SQL Server connection string in Web.config / SchoolContextFactory.cs.",
+      "requirements": "Migrate the SchoolContext EF Core configuration from SQL Server LocalDB with connection string (Data Source=(LocalDb)\\MSSQLLocalDB) to Azure SQL Database with Managed Identity (DefaultAzureCredential) authentication. Update SchoolContextFactory and DI registration to use Azure SQL Database. Remove explicit connection string credentials. Ensure EF Core migrations and schema are compatible with Azure SQL Database.",
+      "dependencies": [
+        "001-upgrade-dotnet"
+      ],
+      "skills": [
+        {
+          "name": "migration-azure-sql-database",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "005-transform-console-logging",
+      "description": "Configure console logging for cloud and container environments",
+      "reason": "The application currently uses System.Diagnostics.Debug.WriteLine for logging which is not captured by Azure Container Apps log aggregation. Proper console logging is required for observability in containers.",
+      "requirements": "Configure structured console logging using the standard .NET logging infrastructure (ILogger). Ensure all log output is directed to stdout/stderr for Azure Container Apps log collection. Replace Debug.WriteLine calls in NotificationService, CoursesController, and other files with structured ILogger calls at appropriate log levels (Error, Warning, Information). Register console logging provider in the application startup.",
+      "dependencies": [
+        "001-upgrade-dotnet"
+      ],
+      "skills": [
+        {
+          "name": "migration-console-logging",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "security",
+      "id": "006-security-cve-remediation",
+      "description": "Scan and remediate known CVEs in project dependencies",
+      "reason": "The project uses older package versions (EF Core 3.1.32, Microsoft.Identity.Client 4.21.1, Microsoft.Data.SqlClient 2.1.4, Newtonsoft.Json 13.0.3) that may contain known security vulnerabilities. Security remediation must be completed before deployment.",
+      "requirements": "Upgrade vulnerable dependencies to the minimum patched version. If a CVE fix requires a major version upgrade, document the affected dependency, the current version, the upgraded major version, and the breaking change risk. Verify that the project builds and all tests pass after remediation. Runtime environment and build tool are established by the upgrade task (001-upgrade-dotnet).",
+      "dependencies": [
+        "001-upgrade-dotnet",
+        "002-transform-msmq-to-servicebus",
+        "003-transform-local-storage-to-blob",
+        "004-transform-sql-to-azure-sql",
+        "005-transform-console-logging"
+      ],
+      "skills": [
+        {
+          "name": "validate-cves-and-fix",
+          "location": "builtin"
+        }
+      ],
+      "successCriteria": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      }
+    },
+    {
+      "type": "infrastructure",
+      "id": "007-infrastructure-bicep",
+      "description": "Generate and provision Bicep IaC for all Azure resources required by ContosoUniversity",
+      "reason": "New Azure infrastructure must be provisioned to host the containerized application and its dependent Azure services before deployment.",
+      "requirements": "Generate Bicep IaC files to provision the following Azure resources: Azure Container Registry (Basic SKU) for Docker image hosting, Azure Container Apps Environment (Consumption) as the hosting platform, Azure Container App (Consumption) for the web application, Azure SQL Database (General Purpose) for school data, Azure Service Bus Namespace (Standard) with a queue named ContosoUniversityNotifications, Azure Storage Account (Standard LRS) with a blob container named teaching-materials, User-Assigned Managed Identity with role assignments (AcrPull on ACR, Azure Service Bus Data Owner on Service Bus, Storage Blob Data Contributor on Storage Account, db_owner-equivalent on Azure SQL Database). All resources should be deployed to the same resource group and region.",
+      "iacType": "bicep",
+      "provision": true,
+      "skills": [
+        {
+          "name": "infrastructure-bicep-generation",
+          "location": "builtin"
+        }
+      ]
+    },
+    {
+      "type": "deployment",
+      "id": "008-deploy-container-apps",
+      "description": "Containerize and deploy the ContosoUniversity application to Azure Container Apps",
+      "reason": "The user explicitly requested deployment to Azure Container Apps. The application must be containerized and deployed to the provisioned Azure Container Apps environment.",
+      "requirements": "Build a Docker image for the ContosoUniversity ASP.NET Core .NET 10 application. Push the image to Azure Container Registry. Deploy to Azure Container Apps using the provisioned infrastructure from task 007. Configure all required environment variables for Azure service connections (Azure SQL Database server, Azure Service Bus namespace, Azure Storage Account, Managed Identity client ID). Set appropriate resource limits and scaling rules for the container app.",
+      "dependencies": [
+        "001-upgrade-dotnet",
+        "002-transform-msmq-to-servicebus",
+        "003-transform-local-storage-to-blob",
+        "004-transform-sql-to-azure-sql",
+        "005-transform-console-logging",
+        "006-security-cve-remediation",
+        "007-infrastructure-bicep"
+      ],
+      "targetAzureService": "Azure Container Apps",
+      "resourceStatus": "New resources provisioned by task 007-infrastructure-bicep",
+      "deploymentTool": "bicep",
+      "skills": [
+        {
+          "name": "azcli-containerapp-deploy",
+          "location": "builtin"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "planName": "buildmelbourne-modernization-plan",
+    "projectName": "ContosoUniversity",
+    "language": "dotnet",
+    "createdAt": "2026-06-29T11:53:42.096\u002B10:00",
+    "version": "1.0"
+  }
+}
