@@ -52,7 +52,13 @@
     {
       "type": "transform",
       "id": "003-transform-local-storage-to-blob",
-      "status": "started",
+      "status": "success",
+      "summary": "Migrated teaching material uploads from local filesystem to Azure Blob Storage. Created IBlobStorageService/BlobStorageService using DefaultAzureCredential. Added Azure.Storage.Blobs 12.28.0. All upload/delete operations in CoursesController updated. Image URLs now use full Azure Blob Storage HTTPS URLs. Build succeeds with 0 errors.",
+      "successCriteriaStatus": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      },
       "description": "Migrate local file system teaching material uploads to Azure Blob Storage",
       "reason": "Local filesystem storage is ephemeral in Azure Container Apps containers. Files uploaded to the local path ~/Uploads/TeachingMaterials/ will be lost on container restarts. Addresses issue: Local filesystem file upload in CoursesController.cs.",
       "requirements": "Migrate teaching material image upload and retrieval in CoursesController from local filesystem (~/Uploads/TeachingMaterials/) to Azure Blob Storage. Use Managed Identity (DefaultAzureCredential) for authentication. Preserve all existing file operations: upload on course create, replace file on course edit (including deletion of old file), delete file on course delete. Preserve existing validation (allowed image extensions: jpg, jpeg, png, gif, bmp; max file size 5MB). Update image URL references to use Azure Blob Storage URLs instead of local virtual paths.",
@@ -74,6 +80,13 @@
     {
       "type": "transform",
       "id": "004-transform-sql-to-azure-sql",
+      "status": "success",
+      "summary": "Migrated SQL Server LocalDB connection string authentication to Azure SQL Database with Managed Identity. Updated appsettings.json connection string from LocalDB/Integrated Security to Azure SQL format with Authentication=Active Directory Default. Azure.Identity (1.14.2) already present; Microsoft.EntityFrameworkCore.SqlServer (10.0.9) transitively includes Microsoft.Data.SqlClient. No code changes required to SchoolContext, SchoolContextFactory, or Program.cs. Build succeeds with 0 errors, 0 warnings.",
+      "successCriteriaStatus": {
+        "passBuild": "true",
+        "generateNewUnitTests": "false",
+        "passUnitTests": "true"
+      },
       "description": "Migrate SQL Server LocalDB connection string authentication to Azure SQL Database with Managed Identity",
       "reason": "Local SQL Server (LocalDB) with Integrated Security is not available in Azure Container Apps. Cloud-native Managed Identity authentication should replace explicit connection strings for security and operational simplicity. Addresses issue: Local SQL Server connection string in Web.config / SchoolContextFactory.cs.",
       "requirements": "Migrate the SchoolContext EF Core configuration from SQL Server LocalDB with connection string (Data Source=(LocalDb)\\MSSQLLocalDB) to Azure SQL Database with Managed Identity (DefaultAzureCredential) authentication. Update SchoolContextFactory and DI registration to use Azure SQL Database. Remove explicit connection string credentials. Ensure EF Core migrations and schema are compatible with Azure SQL Database.",
